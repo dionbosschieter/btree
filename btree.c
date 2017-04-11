@@ -55,7 +55,7 @@ btree *get_last_leaf(int number, btree *tree) {
     return tree;
 }
 
-void insert_number_to_node(int number, btree *tree, btreecontainer *container) {
+btree *insert_number_to_node(int number, btree *tree, btreecontainer *container) {
     if (tree->index1 == 0) {
         tree->index1 = number;
         printf("Adding %d to index1 of [btree=%p] index1: %d, index2: %d\n", number, &tree, tree->index1, tree->index2);
@@ -92,14 +92,54 @@ void insert_number_to_node(int number, btree *tree, btreecontainer *container) {
             newnode->parent = parent;
             if (parent->node_right == NULL) {
                 parent->node_right = newnode;
+                insert_number_to_node(numtomoveup, parent, container);
             } else if (parent->node_middle == NULL) {
                 parent->node_middle = newnode;
-            } else {
-                printf("Error: unexpected codepath\n");
-                exit(2);
+                insert_number_to_node(numtomoveup, parent, container);
+            } else { // if left middle right are set
+
+                // solution: move num up and save new split parent to temp variable
+                btree *newparent = insert_number_to_node(numtomoveup, parent, container);
+                if (newparent == NULL) {
+                    printf("Got no new parent exiting\n");
+                    exit(2);
+                }
+                newparent->parent = parent->parent;
+
+                // so now we have parent and newparent
+                //  assign left,middle,right,newnode to parent and newparent
+                if (newnode->index1 < parent->node_left->index1) {
+                    printf("Newnode will be node_left of parent\n");
+                    newparent->node_right = parent->node_right;
+                    newparent->node_left = parent->node_middle;
+                    parent->node_right = parent->node_left;
+                    parent->node_left = newnode;
+                    parent->node_middle = NULL;
+                } else if (newnode->index1 < parent->node_middle->index1) {
+                    printf("Newnode will be node_right of parent\n");
+                    newparent->node_right = parent->node_right;
+                    newparent->node_left = parent->node_middle;
+                    parent->node_right = newnode;
+                    parent->node_middle = NULL;
+                } else if (newnode->index1 < parent->node_right->index1) {
+                    printf("Newnode [num=%d] will be node_left of newparent [parent->node_right->index1=%d]\n", newnode->index1, parent->node_right->index1);
+                    newparent->node_right = parent->node_right;
+                    newparent->node_left = newnode;
+                    parent->node_right = parent->node_middle;
+                    parent->node_middle = NULL;
+                } else if (newnode->index1 > parent->node_right->index1) {
+                    printf("Newnode will be node_right of newparent\n");
+                    newparent->node_right = newnode;
+                    newparent->node_left = parent->node_right;
+                    parent->node_right = parent->node_middle;
+                    parent->node_middle = NULL;
+                } else {
+                    printf("Error: unexpected codepath\n");
+                    exit(3);
+                }
             }
-            // if btree right is  already set set middle btree
-            insert_number_to_node(numtomoveup, parent, container); 
+
+            return newnode;
         } else { // this is THE top of the three, also change the btree_container
             btree *parent = get_btree(numtomoveup);
             container->firstnode = parent;
@@ -108,12 +148,17 @@ void insert_number_to_node(int number, btree *tree, btreecontainer *container) {
 
             tree->parent = parent;
             newnode->parent = parent;
+
+            return newnode;
         }
 
         printf("\n------------\n");
         print_tree(container->firstnode);
         printf("------------\n");
+
     }
+
+    return NULL;
 }
 
 void add_to_btree(int number, btreecontainer *container) {
