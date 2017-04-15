@@ -151,11 +151,6 @@ btree *insert_number_to_node(int number, btree *tree, btreecontainer *container)
 
             return newnode;
         }
-
-        printf("\n------------\n");
-        print_tree(container->firstnode);
-        printf("------------\n");
-
     }
 
     return NULL;
@@ -163,9 +158,6 @@ btree *insert_number_to_node(int number, btree *tree, btreecontainer *container)
 
 void add_to_btree(int number, btreecontainer *container) {
     // walk three and insert in node, 
-    // if index1 and index2 is used split and move number up, insert in node
-    // if index1 and index2 is used split and move number up, insert in node
-    // ...
     btree *last_leaf = get_last_leaf(number, container->firstnode);
 
     // insert or split and move back up the tree
@@ -184,8 +176,6 @@ int main() {
     printf("Btree implementation in C, by <dionbosschieter@gmail.com>\n");
 
     int list[] = {1,50,20,30,2,5,10,19};
-    // int list[] = {1,50,20,30,2,5,10,19};
-    // int list[] = {10,30,2,19,5,50,20,1};
     size_t listsize = sizeof(list) / sizeof(int);
 
     btreecontainer container;
