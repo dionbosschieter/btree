@@ -2,9 +2,7 @@
 
 Description
 -----------
-```bash
-# insert number to btree
-
+```c
 struct btree {
     node *topnode
     size_t nodecount;
