@@ -55,6 +55,18 @@ btree *get_last_leaf(int number, btree *tree) {
     return tree;
 }
 
+btree *change_top_of_btree_and_add_newnode(int number, btreecontainer *container, btree *newnode, btree *leftnode) {
+    btree *topnode = get_btree(number);
+    container->firstnode = topnode;
+    topnode->node_right = newnode;
+    topnode->node_left = leftnode;
+
+    leftnode->parent = topnode;
+    newnode->parent = topnode;
+
+    return newnode;
+}
+
 btree *insert_number_to_node(int number, btree *tree, btreecontainer *container) {
     if (tree->index1 == 0) {
         tree->index1 = number;
@@ -87,70 +99,62 @@ btree *insert_number_to_node(int number, btree *tree, btreecontainer *container)
         btree *newnode = get_btree(tree->index2);
         tree->index2 = 0;
 
-        if (tree->parent != NULL) {
-            btree *parent = tree->parent;
-            newnode->parent = parent;
-            if (parent->node_right == NULL) {
-                parent->node_right = newnode;
-                insert_number_to_node(numtomoveup, parent, container);
-            } else if (parent->node_middle == NULL) {
-                parent->node_middle = newnode;
-                insert_number_to_node(numtomoveup, parent, container);
-            } else { // if left middle right are set
-
-                // solution: move num up and save new split parent to temp variable
-                btree *newparent = insert_number_to_node(numtomoveup, parent, container);
-                if (newparent == NULL) {
-                    printf("Got no new parent exiting\n");
-                    exit(2);
-                }
-                newparent->parent = parent->parent;
-
-                // so now we have parent and newparent
-                //  assign left,middle,right,newnode to parent and newparent
-                if (newnode->index1 < parent->node_left->index1) {
-                    printf("Newnode will be node_left of parent\n");
-                    newparent->node_right = parent->node_right;
-                    newparent->node_left = parent->node_middle;
-                    parent->node_right = parent->node_left;
-                    parent->node_left = newnode;
-                    parent->node_middle = NULL;
-                } else if (newnode->index1 < parent->node_middle->index1) {
-                    printf("Newnode will be node_right of parent\n");
-                    newparent->node_right = parent->node_right;
-                    newparent->node_left = parent->node_middle;
-                    parent->node_right = newnode;
-                    parent->node_middle = NULL;
-                } else if (newnode->index1 < parent->node_right->index1) {
-                    printf("Newnode [num=%d] will be node_left of newparent [parent->node_right->index1=%d]\n", newnode->index1, parent->node_right->index1);
-                    newparent->node_right = parent->node_right;
-                    newparent->node_left = newnode;
-                    parent->node_right = parent->node_middle;
-                    parent->node_middle = NULL;
-                } else if (newnode->index1 > parent->node_right->index1) {
-                    printf("Newnode will be node_right of newparent\n");
-                    newparent->node_right = newnode;
-                    newparent->node_left = parent->node_right;
-                    parent->node_right = parent->node_middle;
-                    parent->node_middle = NULL;
-                } else {
-                    printf("Error: unexpected codepath\n");
-                    exit(3);
-                }
-            }
-
-            return newnode;
-        } else { // this is THE top of the three, also change the btree_container
-            btree *parent = get_btree(numtomoveup);
-            container->firstnode = parent;
-            parent->node_right = newnode;
-            parent->node_left = tree;
-
-            tree->parent = parent;
-            newnode->parent = parent;
-
-            return newnode;
+        if (tree->parent == NULL) {
+            return change_top_of_btree_and_add_newnode(numtomoveup, container, newnode, tree);
         }
+
+        btree *parent = tree->parent;
+        newnode->parent = parent;
+        if (parent->node_right == NULL) {
+            parent->node_right = newnode;
+            insert_number_to_node(numtomoveup, parent, container);
+        } else if (parent->node_middle == NULL) {
+            parent->node_middle = newnode;
+            insert_number_to_node(numtomoveup, parent, container);
+        } else { // if left middle right are set
+
+            // solution: move num up and save new split parent to temp variable
+            btree *newparent = insert_number_to_node(numtomoveup, parent, container);
+            if (newparent == NULL) {
+                printf("Got no new parent exiting\n");
+                exit(2);
+            }
+            newparent->parent = parent->parent;
+
+            // so now we have parent and newparent
+            //  assign left,middle,right,newnode to parent and newparent
+            if (newnode->index1 < parent->node_left->index1) {
+                printf("Newnode will be node_left of parent\n");
+                newparent->node_right = parent->node_right;
+                newparent->node_left = parent->node_middle;
+                parent->node_right = parent->node_left;
+                parent->node_left = newnode;
+                parent->node_middle = NULL;
+            } else if (newnode->index1 < parent->node_middle->index1) {
+                printf("Newnode will be node_right of parent\n");
+                newparent->node_right = parent->node_right;
+                newparent->node_left = parent->node_middle;
+                parent->node_right = newnode;
+                parent->node_middle = NULL;
+            } else if (newnode->index1 < parent->node_right->index1) {
+                printf("Newnode [num=%d] will be node_left of newparent [parent->node_right->index1=%d]\n", newnode->index1, parent->node_right->index1);
+                newparent->node_right = parent->node_right;
+                newparent->node_left = newnode;
+                parent->node_right = parent->node_middle;
+                parent->node_middle = NULL;
+            } else if (newnode->index1 > parent->node_right->index1) {
+                printf("Newnode will be node_right of newparent\n");
+                newparent->node_right = newnode;
+                newparent->node_left = parent->node_right;
+                parent->node_right = parent->node_middle;
+                parent->node_middle = NULL;
+            } else {
+                printf("Error: unexpected codepath\n");
+                exit(3);
+            }
+        }
+
+        return newnode;
     }
 
     return NULL;
